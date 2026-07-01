@@ -1480,6 +1480,17 @@ window.addEventListener('storage',e=>{
 });
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  navigator.serviceWorker.register('/sw.js', {updateViaCache:'none'}).then(reg=>{
+    // Verifica atualização a cada 30 segundos
+    setInterval(()=>reg.update(), 30000);
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      nw.addEventListener('statechange',()=>{
+        if(nw.state==='activated') window.location.reload();
+      });
+    });
+  }).catch(()=>{});
+  // Recarrega quando novo SW assume o controle
+  navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
 }
 </script>
