@@ -409,12 +409,13 @@ tbody tr:hover td{background:var(--accent-soft)}
             <div class="field"><label>Nome</label><input id="f-nome" type="text" placeholder="João Silva"></div>
             <div class="field"><label>Cargo</label><input id="f-cargo" type="text" placeholder="Analista"></div>
             <div class="field"><label>CPF</label><input id="f-cpf" type="text" placeholder="000.000.000-00" maxlength="14" inputmode="numeric"></div>
+            <div class="field"><label>Entrada prevista</label><input id="f-hora" type="time"></div>
             <button class="btn btn-blue" onclick="addFunc()">Cadastrar</button>
           </div>
         </div>
         <div class="card">
           <div class="card-title">Equipe</div>
-          <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>CPF</th><th>Hoje</th><th>Status</th><th></th></tr></thead><tbody id="func-tbody"></tbody></table></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>CPF</th><th>Entrada prevista</th><th>Hoje</th><th>Status</th><th></th></tr></thead><tbody id="func-tbody"></tbody></table></div>
           <div id="func-empty" class="empty" style="display:none"><div class="empty-ico">👥</div>Nenhum funcionário cadastrado.</div>
         </div>
       </div>
@@ -607,6 +608,14 @@ function thumb(foto,lbl){ if(!foto) return '<span style="color:var(--text-3);fon
 function badge(dentro){ return dentro?'<span class="badge badge-g"><span class="dot dot-g"></span>Dentro</span>':'<span class="badge badge-r"><span class="dot dot-r"></span>Fora</span>'; }
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function greeting(){ const h=new Date().getHours(); return h>=5&&h<12?'Bom dia':h>=12&&h<18?'Boa tarde':'Boa noite'; }
+function isAtrasada(cpf,iso){
+  const f=S.funcs[cpf]; if(!f||!f.hora_entrada) return false;
+  const entrada=new Date(iso);
+  const [hh,mm]=f.hora_entrada.split(':').map(Number);
+  const prevista=new Date(entrada); prevista.setHours(hh,mm,0,0);
+  return entrada>prevista;
+}
+function badgeAtraso(cpf,iso){ return isAtrasada(cpf,iso)?'<span class="badge badge-r" style="margin-left:4px">Atrasada</span>':'<span class="badge badge-g" style="margin-left:4px">No horário</span>'; }
 function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 $('f-cpf')&&$('f-cpf').addEventListener('input',function(){ this.value=cpfMask(this.value); });
@@ -691,11 +700,11 @@ function userPunch(cpf){
 }
 
 function addFunc(){
-  const nome=$('f-nome').value.trim(), cargo=$('f-cargo').value.trim(), cpf=$('f-cpf').value.trim();
-  if(!nome||!cargo||!cpf){ toast('Preencha todos os campos.'); return; }
+  const nome=$('f-nome').value.trim(), cargo=$('f-cargo').value.trim(), cpf=$('f-cpf').value.trim(), hora=$('f-hora').value;
+  if(!nome||!cargo||!cpf){ toast('Preencha nome, cargo e CPF.'); return; }
   if(S.funcs[cpf]){ toast('CPF já cadastrado.'); return; }
-  S.funcs[cpf]={nome,cargo,cpf}; S.pontos[cpf]=[];
-  $('f-nome').value=''; $('f-cargo').value=''; $('f-cpf').value='';
+  S.funcs[cpf]={nome,cargo,cpf,hora_entrada:hora||null}; S.pontos[cpf]=[];
+  $('f-nome').value=''; $('f-cargo').value=''; $('f-cpf').value=''; $('f-hora').value='';
   save(); toast(nome+' cadastrado!'); renderFuncs(); renderDash();
 }
 function delFunc(cpf){ const n=S.funcs[cpf].nome; delete S.funcs[cpf]; delete S.pontos[cpf]; if(S.sel===cpf) S.sel=null; save(); toast(n+' removido.'); renderFuncs(); renderDash(); }
@@ -774,12 +783,12 @@ function renderDash(){
   const hoje=fs.filter(f=>(S.pontos[f.cpf]||[]).some(r=>new Date(r.i).toDateString()===today())).length;
   $('stats').innerHTML='<div class="stat"><div class="stat-lbl">Funcionários</div><div class="stat-val">'+fs.length+'</div><div class="stat-sub">cadastrados</div></div>'+'<div class="stat"><div class="stat-lbl">Presentes agora</div><div class="stat-val green">'+ab.length+'</div><div class="stat-sub">com ponto aberto</div></div>'+'<div class="stat"><div class="stat-lbl">Com ponto hoje</div><div class="stat-val">'+hoje+'</div><div class="stat-sub">trabalharam hoje</div></div>';
   if(!ab.length){ $('dash-tbody').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:28px">Nenhum funcionário presente.</td></tr>'; return; }
-  $('dash-tbody').innerHTML=ab.map(f=>{ const u=S.pontos[f.cpf].slice(-1)[0]; return '<tr><td>'+thumb(u.foto_entrada,'Entrada '+f.nome)+'</td><td><strong>'+f.nome+'</strong></td><td style="color:var(--text-2)">'+f.cargo+'</td><td style="font-family:monospace">'+fmt(u.i)+'</td><td style="font-family:monospace">'+dur(secs(u.i,new Date().toISOString()))+'</td><td>'+badge(true)+'</td></tr>'; }).join('');
+  $('dash-tbody').innerHTML=ab.map(f=>{ const u=S.pontos[f.cpf].slice(-1)[0]; return '<tr><td>'+thumb(u.foto_entrada,'Entrada '+f.nome)+'</td><td><strong>'+f.nome+'</strong></td><td style="color:var(--text-2)">'+f.cargo+'</td><td style="font-family:monospace">'+fmt(u.i)+(f.hora_entrada?badgeAtraso(f.cpf,u.i):'')+'</td><td style="font-family:monospace">'+dur(secs(u.i,new Date().toISOString()))+'</td><td>'+badge(true)+'</td></tr>'; }).join('');
 }
 function renderFuncs(){
   const fs=Object.values(S.funcs); if(!fs.length){ $('func-tbody').innerHTML=''; $('func-empty').style.display='block'; return; }
   $('func-empty').style.display='none';
-  $('func-tbody').innerHTML=fs.map(f=>{ const s=secsToday(f.cpf),d=isIn(f.cpf); return '<tr><td><strong>'+f.nome+'</strong></td><td style="color:var(--text-2)">'+f.cargo+'</td><td style="font-family:monospace;font-size:12px;color:var(--text-3)">'+f.cpf+'</td><td style="font-family:monospace">'+(s>0?dur(s):'—')+'</td><td>'+badge(d)+'</td><td><button class="btn btn-red" style="padding:6px 10px;font-size:12px;min-height:36px" onclick="delFunc(\''+f.cpf+'\')">Remover</button></td></tr>'; }).join('');
+  $('func-tbody').innerHTML=fs.map(f=>{ const s=secsToday(f.cpf),d=isIn(f.cpf),hojeRs=(S.pontos[f.cpf]||[]).find(r=>new Date(r.i).toDateString()===today()); return '<tr><td><strong>'+f.nome+'</strong></td><td style="color:var(--text-2)">'+f.cargo+'</td><td style="font-family:monospace;font-size:12px;color:var(--text-3)">'+f.cpf+'</td><td style="font-family:monospace;font-size:13px">'+(f.hora_entrada||'<span style="color:var(--text-3)">—</span>')+'</td><td style="font-family:monospace">'+(s>0?dur(s):'—')+'</td><td>'+badge(d)+(hojeRs&&f.hora_entrada?badgeAtraso(f.cpf,hojeRs.i):'')+'</td><td><button class="btn btn-red" style="padding:6px 10px;font-size:12px;min-height:36px" onclick="delFunc(\''+f.cpf+'\')">Remover</button></td></tr>'; }).join('');
 }
 function renderRel(){
   const fs=Object.values(S.funcs); if(!fs.length){ $('rel-tbody').innerHTML=''; $('rel-empty').style.display='block'; $('rel-detail').style.display='none'; return; }
@@ -789,7 +798,7 @@ function renderRel(){
 function relDetail(cpf){
   const f=S.funcs[cpf],rs=[...(S.pontos[cpf]||[])].reverse();
   $('rel-detail').style.display='block'; $('rel-detail-title').textContent='Histórico — '+f.nome;
-  $('rel-detail-tbody').innerHTML=!rs.length?'<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:24px">Sem registros.</td></tr>':rs.map(r=>'<tr><td>'+thumb(r.foto_entrada,'Entrada')+'</td><td style="font-family:monospace">'+fmt(r.i,true)+'</td><td>'+thumb(r.foto_saida,'Saída')+'</td><td>'+(r.o?'<span style="font-family:monospace">'+fmt(r.o,true)+'</span>':'<span class="badge badge-g"><span class="dot dot-g"></span>Aberto</span>')+'</td><td style="font-family:monospace">'+(r.o?dur(secs(r.i,r.o)):'—')+'</td></tr>').join('');
+  $('rel-detail-tbody').innerHTML=!rs.length?'<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:24px">Sem registros.</td></tr>':rs.map(r=>'<tr><td>'+thumb(r.foto_entrada,'Entrada')+'</td><td style="font-family:monospace">'+fmt(r.i,true)+(f.hora_entrada?badgeAtraso(cpf,r.i):'')+'</td><td>'+thumb(r.foto_saida,'Saída')+'</td><td>'+(r.o?'<span style="font-family:monospace">'+fmt(r.o,true)+'</span>':'<span class="badge badge-g"><span class="dot dot-g"></span>Aberto</span>')+'</td><td style="font-family:monospace">'+(r.o?dur(secs(r.i,r.o)):'—')+'</td></tr>').join('');
   $('rel-detail').scrollIntoView({behavior:'smooth'});
 }
 
