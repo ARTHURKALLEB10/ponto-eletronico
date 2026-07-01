@@ -673,9 +673,8 @@ tbody tr:hover td{background:var(--accent-soft)}
 
       <!-- EMPRESAS (Super Admin) -->
       <div class="view" id="view-empresas">
-        <div class="page-header"><h2>Empresas</h2><p>Visão geral de todas as empresas</p></div>
-        <div id="empresas-pendentes-wrap" style="margin-bottom:16px"></div>
-        <div id="empresas-ativas-wrap"></div>
+        <div class="page-header"><h2>Empresas</h2><p>Todas as empresas cadastradas na plataforma</p></div>
+        <div id="empresas-wrap"></div>
       </div>
 
       <!-- PERMISSÕES (Super Admin) -->
@@ -1191,24 +1190,40 @@ async function cadastrarEmpresa(){
 }
 
 async function renderEmpresas(){
-  const pw=$('empresas-pendentes-wrap'), aw=$('empresas-ativas-wrap');
-  if(!sbReady()){ pw.innerHTML=''; aw.innerHTML='<div class="empty">Supabase não configurado.</div>'; return; }
-  pw.innerHTML=''; aw.innerHTML='<div class="empty">Carregando...</div>';
+  const wrap=$('empresas-wrap');
+  if(!wrap) return;
+  if(!sbReady()){ wrap.innerHTML='<div class="empty">Supabase não configurado.</div>'; return; }
+  wrap.innerHTML='<div class="empty">Carregando...</div>';
   const url=getSbUrl(), key=getSbKey(), h={'apikey':key,'Authorization':'Bearer '+key};
   try{
     const [empresas, funcs] = await Promise.all([
       fetch(url+'/rest/v1/pf_empresas?select=*&order=created_at.desc',{headers:h}).then(r=>r.json()),
       fetch(url+'/rest/v1/pf_funcionarios?select=empresa_id',{headers:h}).then(r=>r.json()),
     ]);
-    if(!Array.isArray(empresas)){ aw.innerHTML='<div class="empty">Erro ao carregar.</div>'; return; }
+    if(!Array.isArray(empresas)){ wrap.innerHTML='<div class="empty">Erro ao carregar.</div>'; return; }
+    if(!empresas.length){ wrap.innerHTML='<div class="card"><div class="empty" style="padding:30px">Nenhuma empresa cadastrada ainda.</div></div>'; return; }
 
     const contFunc={};
     if(Array.isArray(funcs)) funcs.forEach(f=>{ contFunc[f.empresa_id]=(contFunc[f.empresa_id]||0)+1; });
+    const totalFuncs=Object.values(contFunc).reduce((a,b)=>a+b,0);
 
     const statusColor={ativo:'#22c55e',pendente:'#f59e0b',suspenso:'#ef4444'};
     const statusLabel={ativo:'Ativo',pendente:'Pendente',suspenso:'Suspenso'};
 
-    function cardEmpresa(e){
+    const resumo=`<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+      <div class="card" style="flex:1;min-width:120px;padding:14px 18px">
+        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Empresas</div>
+        <div style="font-size:26px;font-weight:700;color:#f1f5f9">${empresas.length}</div>
+        <div style="font-size:11px;color:#64748b">${empresas.filter(e=>e.status==='ativo').length} ativas · ${empresas.filter(e=>e.status==='suspenso').length} suspensas</div>
+      </div>
+      <div class="card" style="flex:1;min-width:120px;padding:14px 18px">
+        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Funcionários</div>
+        <div style="font-size:26px;font-weight:700;color:#f1f5f9">${totalFuncs}</div>
+        <div style="font-size:11px;color:#64748b">no total na plataforma</div>
+      </div>
+    </div>`;
+
+    const cards=empresas.map(e=>{
       const st=e.status||'pendente';
       const cor=statusColor[st]||'#94a3b8';
       const lbl=statusLabel[st]||st;
@@ -1216,47 +1231,34 @@ async function renderEmpresas(){
       const nFunc=contFunc[e.id]||0;
       const foneNum=e.telefone?e.telefone.replace(/\D/g,''):'';
       const foneLink=e.telefone?`<a href="https://wa.me/55${foneNum}" target="_blank" style="color:#25d366;text-decoration:none;font-weight:600">${e.telefone}</a>`:'—';
-      return `<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      const nomeSafe=e.nome.replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+      return `<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 18px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
           <div style="flex:1;min-width:200px">
-            <div style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:8px">${e.nome}</div>
-            <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+              <span style="font-size:16px;font-weight:700;color:#f1f5f9">${e.nome}</span>
+              <span style="background:${cor}20;color:${cor};border:1px solid ${cor}44;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700">${lbl}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:110px 1fr;gap:5px 12px;font-size:13px">
               <span style="color:#64748b">Administrador</span><span style="color:#cbd5e1">${e.nome_admin||'—'}</span>
-              <span style="color:#64748b">CPF responsável</span><span style="color:#cbd5e1">${e.cpf||'—'}</span>
+              <span style="color:#64748b">CPF</span><span style="color:#cbd5e1">${e.cpf||'—'}</span>
               <span style="color:#64748b">Telefone</span><span>${foneLink}</span>
-              <span style="color:#64748b">E-mail</span><span style="color:#cbd5e1">${e.email||'—'}</span>
-              <span style="color:#64748b">Cadastro em</span><span style="color:#cbd5e1">${dt}</span>
-              <span style="color:#64748b">Funcionários</span><span style="color:#f1f5f9;font-weight:700;font-size:14px">${nFunc} cadastrado${nFunc!==1?'s':''}</span>
+              <span style="color:#64748b">E-mail</span><span style="color:#cbd5e1;word-break:break-all">${e.email||'—'}</span>
+              <span style="color:#64748b">Cadastrado em</span><span style="color:#cbd5e1">${dt}</span>
+              <span style="color:#64748b">Funcionários</span><span style="color:#f1f5f9;font-weight:700">${nFunc} cadastrado${nFunc!==1?'s':''}</span>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:90px">
-            <span style="background:${cor}22;color:${cor};border:1px solid ${cor}55;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700">${lbl}</span>
-            <div style="display:flex;flex-direction:column;gap:6px;width:100%">
-              ${st!=='ativo'?`<button class="btn btn-blue" style="font-size:11px;padding:6px 10px" onclick="ativarEmpresa('${e.id}')">✓ Ativar</button>`:''}
-              ${st==='ativo'?`<button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;color:#f87171" onclick="desativarEmpresa('${e.id}')">Suspender</button>`:''}
-              <button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;color:#f87171" onclick="excluirEmpresa('${e.id}','${e.nome.replace(/'/g,'\\&#39;')}')">Excluir</button>
-            </div>
+          <div style="display:flex;flex-direction:column;gap:6px;min-width:100px">
+            ${st!=='ativo'?`<button class="btn btn-blue" style="font-size:12px;padding:7px 12px" onclick="ativarEmpresa('${e.id}')">✓ Ativar</button>`:''}
+            ${st==='ativo'?`<button class="btn btn-ghost" style="font-size:12px;padding:7px 12px" onclick="desativarEmpresa('${e.id}')">Inativar</button>`:''}
+            <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px;color:#f87171;border-color:rgba(248,113,113,.3)" onclick="excluirEmpresa('${e.id}','${nomeSafe}')">Excluir</button>
           </div>
         </div>
       </div>`;
-    }
+    }).join('');
 
-    const pendentes=empresas.filter(e=>e.status==='pendente');
-    const resto=empresas.filter(e=>e.status!=='pendente');
-    const totalFuncs=Object.values(contFunc).reduce((a,b)=>a+b,0);
-
-    pw.innerHTML = pendentes.length
-      ? `<div class="card" style="margin-bottom:16px"><div class="card-title" style="color:#f59e0b">⏳ Aguardando ativação (${pendentes.length})</div>${pendentes.map(cardEmpresa).join('')}</div>`
-      : '';
-
-    aw.innerHTML = `<div class="card">
-      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <span>Todas as empresas</span>
-        <span style="font-size:12px;font-weight:500;color:#64748b">${empresas.length} empresa${empresas.length!==1?'s':''} · ${totalFuncs} funcionário${totalFuncs!==1?'s':''} no total</span>
-      </div>
-      ${resto.length ? resto.map(cardEmpresa).join('') : '<div class="empty" style="padding:20px">Nenhuma empresa cadastrada ainda.</div>'}
-    </div>`;
-  }catch(err){ aw.innerHTML='<div class="empty">Erro ao carregar empresas.</div>'; console.error(err); }
+    wrap.innerHTML = resumo + cards;
+  }catch(err){ wrap.innerHTML='<div class="empty">Erro ao carregar empresas.</div>'; console.error(err); }
 }
 
 async function ativarEmpresa(id){
