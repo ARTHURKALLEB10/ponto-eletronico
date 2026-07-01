@@ -1168,7 +1168,7 @@ async function cadastrarEmpresa(){
     ['reg-nome','reg-nome-admin','reg-senha','reg-cpf','reg-telefone','reg-email'].forEach(i=>{ const el=$(i); if(el) el.value=''; });
     // Mostrar sucesso
     showScreen('home');
-    toast('✅ Cadastro enviado! Aguarde aprovação do suporte.');
+    toast('✅ Empresa cadastrada! Já pode fazer login como administrador.');
   }catch(e){ regErr('Erro de conexão. Verifique sua internet.'); }
 }
 
