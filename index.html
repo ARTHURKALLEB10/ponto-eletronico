@@ -1166,9 +1166,16 @@ async function cadastrarEmpresa(){
     }
     // Limpar formulário
     ['reg-nome','reg-nome-admin','reg-senha','reg-cpf','reg-telefone','reg-email'].forEach(i=>{ const el=$(i); if(el) el.value=''; });
-    // Mostrar sucesso
-    showScreen('home');
-    toast('✅ Empresa cadastrada! Já pode fazer login como administrador.');
+    // Ir para login e pré-selecionar a empresa recém-cadastrada
+    showScreen('admin-login');
+    setTimeout(()=>{
+      $('admin-user')&&$('admin-user').focus();
+      carregarEmpresasSelect().then(()=>{
+        const sel=$('admin-empresa-sel');
+        if(sel) sel.value=id;
+      });
+    },80);
+    toast('✅ Empresa cadastrada! Faça login para acessar.');
   }catch(e){ regErr('Erro de conexão. Verifique sua internet.'); }
 }
 
