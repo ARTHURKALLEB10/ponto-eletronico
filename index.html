@@ -1,5 +1,5 @@
 <title>PontoFácil</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="description" content="Sistema de ponto eletrônico com perfis de admin e usuário.">
 <meta name="theme-color" content="#1E40AF">
 <meta name="mobile-web-app-capable" content="yes">
@@ -17,6 +17,8 @@
   --green:#065F46;--green-bg:#D1FAE5;--green-dot:#10B981;
   --red:#991B1B;--red-bg:#FEE2E2;--red-dot:#EF4444;
   --sidebar:232px;--r:10px;
+  --sb:env(safe-area-inset-bottom,0px);
+  --st:env(safe-area-inset-top,0px);
 }
 body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text-1);min-height:100vh;font-size:14px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 .screen{display:none;min-height:100vh}
@@ -120,7 +122,7 @@ body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:var(--
 .form-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
 .field{display:flex;flex-direction:column;gap:5px}
 label{font-size:12px;font-weight:600;color:var(--text-1)}
-input,select,textarea{padding:10px 12px;border:1px solid var(--border);border-radius:7px;font-size:14px;color:var(--text-1);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;min-height:44px;-webkit-appearance:none;appearance:none}
+input,select,textarea{padding:10px 12px;border:1px solid var(--border);border-radius:7px;font-size:16px;color:var(--text-1);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;min-height:44px;-webkit-appearance:none;appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 textarea{resize:vertical;min-height:100px;line-height:1.6;min-height:auto}
 .btn{padding:10px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .14s,transform .1s;white-space:nowrap;min-height:44px;-webkit-appearance:none}
@@ -195,11 +197,12 @@ tbody tr:hover td{background:var(--accent-soft)}
   .sidebar.mob-open{transform:translateX(0);box-shadow:6px 0 40px rgba(0,0,0,.3)}
   #sidebar-overlay.mob-open{display:block}
   .admin-mobile-bar{display:flex}
-  .main{margin-left:0;padding:16px;max-width:100vw;padding-top:8px}
+  .main{margin-left:0;padding:16px 14px calc(80px + var(--sb));max-width:100vw}
   .stats{grid-template-columns:1fr 1fr}
   .form-row,.form-row-4{grid-template-columns:1fr}
   .pass-row{flex-direction:column}
   #home-clock{font-size:44px}
+  #screen-home{padding-bottom:calc(40px + var(--sb))}
   .home-roles{flex-direction:column;align-items:stretch;width:100%;max-width:340px}
   .role-card{display:flex;align-items:center;gap:16px;text-align:left;padding:18px 20px;min-width:unset}
   .role-icon{font-size:28px;margin-bottom:0;flex-shrink:0}
@@ -208,11 +211,31 @@ tbody tr:hover td{background:var(--accent-soft)}
   .page-header{margin-bottom:16px}
   .punch-big-btn{width:100%;padding:20px}
   table{min-width:400px}
+  /* bottom nav */
+  .admin-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--primary);border-top:1px solid rgba(255,255,255,.12);padding-bottom:var(--sb);z-index:15}
+  .abn-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border:none;background:none;color:rgba(255,255,255,.45);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+  .abn-btn.active{color:#fff}
+  .abn-btn svg{width:22px;height:22px}
+  /* login e telas com sheet */
+  #screen-user-login,#screen-admin-login{justify-content:flex-end}
+  .login-box{border-radius:20px 20px 0 0;border:none;padding-bottom:calc(32px + var(--sb))}
+  /* employee */
+  #screen-employee{padding-top:0}
+  .screen-topbar{padding-top:calc(16px + var(--st))}
+  .emp-grid{grid-template-columns:1fr}
+  /* confirm sheet */
+  #emp-confirm{align-items:flex-end}
+  .confirm-box{border-radius:20px 20px 0 0;padding-bottom:calc(28px + var(--sb))}
+  /* user panel */
+  .user-topbar{padding-top:calc(12px + var(--st))}
+  .user-content{padding-bottom:calc(24px + var(--sb))}
 }
 @media(max-width:400px){
   .stats{grid-template-columns:1fr}
   #home-clock{font-size:38px}
 }
+/* bottom nav always hidden on desktop */
+.admin-bottom-nav{display:none}
 </style>
 
 <!-- HOME -->
@@ -335,7 +358,7 @@ tbody tr:hover td{background:var(--accent-soft)}
   <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
     <div class="admin-mobile-bar">
       <button class="hamburger" onclick="openSidebar()">&#9776;</button>
-      <span class="admin-mobile-title">PontoFácil</span>
+      <span class="admin-mobile-title" id="admin-mobile-title">Dashboard</span>
     </div>
     <main class="main">
 
@@ -455,6 +478,25 @@ tbody tr:hover td{background:var(--accent-soft)}
       </div>
 
     </main>
+
+    <!-- Barra inferior mobile -->
+    <nav class="admin-bottom-nav" id="admin-bottom-nav">
+      <button class="abn-btn active" data-view="dashboard" onclick="adminNav('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Início
+      </button>
+      <button class="abn-btn" data-view="ponto" onclick="adminNav('ponto')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Ponto
+      </button>
+      <button class="abn-btn" data-view="funcionarios" onclick="adminNav('funcionarios')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe
+      </button>
+      <button class="abn-btn" data-view="relatorio" onclick="adminNav('relatorio')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Relatório
+      </button>
+      <button class="abn-btn" data-view="__menu" onclick="openSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>Menu
+      </button>
+    </nav>
   </div>
 </div>
 
@@ -528,12 +570,16 @@ function showScreen(n){
 function openSidebar(){ $('sidebar').classList.add('mob-open'); $('sidebar-overlay').classList.add('mob-open'); }
 function closeSidebar(){ $('sidebar').classList.remove('mob-open'); $('sidebar-overlay').classList.remove('mob-open'); }
 
+const VIEW_TITLES={dashboard:'Dashboard',relatorio:'Relatório',ponto:'Registrar Ponto',funcionarios:'Funcionários',usuarios:'Usuários',abas:'Abas',config:'Configurações'};
 function adminNav(v){
   closeSidebar();
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.abn-btn').forEach(b=>b.classList.remove('active'));
   $('view-'+v).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>{ if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+v+"'")) b.classList.add('active'); });
+  document.querySelectorAll('.abn-btn[data-view="'+v+'"]').forEach(b=>b.classList.add('active'));
+  const mt=$('admin-mobile-title'); if(mt) mt.textContent=VIEW_TITLES[v]||v;
   if(v==='dashboard')    renderDash();
   if(v==='relatorio')    renderRel();
   if(v==='ponto')        renderPontoView();
@@ -689,10 +735,38 @@ function addTab(){
   save(); toast('Aba "'+title+'" criada!'); renderTabsAdmin();
 }
 function delTab(id){ S.tabs=S.tabs.filter(t=>t.id!==id); save(); toast('Aba removida.'); renderTabsAdmin(); }
+function editTab(id){
+  const t=S.tabs.find(x=>x.id===id); if(!t) return;
+  const box=$('edit-tab-box-'+id);
+  box.style.display=box.style.display==='none'?'block':'none';
+}
+function saveTab(id){
+  const t=S.tabs.find(x=>x.id===id); if(!t) return;
+  t.title=$('edit-title-'+id).value.trim()||t.title;
+  t.icon=$('edit-icon-'+id).value.trim()||t.icon;
+  t.content=$('edit-content-'+id).value;
+  save(); toast('Aba atualizada!'); renderTabsAdmin();
+}
 function renderTabsAdmin(){
   if(!S.tabs.length){ $('tabs-list').innerHTML=''; $('tabs-empty').style.display='block'; return; }
   $('tabs-empty').style.display='none';
-  $('tabs-list').innerHTML=S.tabs.map(t=>'<div class="tab-item"><div class="tab-item-left"><div class="tab-item-icon">'+t.icon+'</div><div style="min-width:0"><div class="tab-item-title">'+escHtml(t.title)+'</div><div class="tab-item-preview">'+escHtml(t.content.substring(0,80))+(t.content.length>80?'…':'')+'</div></div></div><button class="btn btn-red" style="flex-shrink:0" onclick="delTab(\''+t.id+'\')">Remover</button></div>').join('');
+  $('tabs-list').innerHTML=S.tabs.map(t=>'<div class="tab-item" style="flex-direction:column;align-items:stretch">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'+
+      '<div class="tab-item-left"><div class="tab-item-icon">'+t.icon+'</div><div style="min-width:0"><div class="tab-item-title">'+escHtml(t.title)+'</div><div class="tab-item-preview">'+escHtml(t.content.substring(0,60))+(t.content.length>60?'…':'')+'</div></div></div>'+
+      '<div style="display:flex;gap:6px;flex-shrink:0">'+
+        '<button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;min-height:36px" onclick="editTab(\''+t.id+'\')">✏️ Editar</button>'+
+        '<button class="btn btn-red" style="padding:6px 10px;font-size:12px;min-height:36px" onclick="delTab(\''+t.id+'\')">Remover</button>'+
+      '</div>'+
+    '</div>'+
+    '<div id="edit-tab-box-'+t.id+'" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">'+
+      '<div style="display:grid;grid-template-columns:1fr 72px;gap:10px;margin-bottom:10px">'+
+        '<div class="field"><label>Título</label><input id="edit-title-'+t.id+'" type="text" value="'+escHtml(t.title)+'"></div>'+
+        '<div class="field"><label>Ícone</label><input id="edit-icon-'+t.id+'" type="text" value="'+escHtml(t.icon)+'" maxlength="2"></div>'+
+      '</div>'+
+      '<div class="field" style="margin-bottom:10px"><label>Conteúdo</label><textarea id="edit-content-'+t.id+'" style="min-height:100px">'+escHtml(t.content)+'</textarea></div>'+
+      '<button class="btn btn-blue" style="width:100%" onclick="saveTab(\''+t.id+'\')">Salvar alterações</button>'+
+    '</div>'+
+  '</div>').join('');
 }
 
 function renderDash(){
