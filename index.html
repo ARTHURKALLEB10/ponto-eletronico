@@ -1155,7 +1155,7 @@ async function cadastrarEmpresa(){
     const r=await fetch(getSbUrl()+'/rest/v1/pf_empresas',{
       method:'POST',
       headers:sbH({'Prefer':'return=minimal'}),
-      body:JSON.stringify([{id,nome,nome_admin:nomeAdmin,senha_admin:senha,cpf,telefone:tel,email,status:'pendente'}])
+      body:JSON.stringify([{id,nome,nome_admin:nomeAdmin,senha_admin:senha,cpf,telefone:tel,email,status:'ativo'}])
     });
     if(!r.ok){
       let detail='';
