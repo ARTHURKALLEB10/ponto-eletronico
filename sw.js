@@ -1,4 +1,4 @@
-const CACHE = 'pontofacil-v2';
+const CACHE = 'pontofacil-v4';
 const ASSETS = [
   '/',
   '/index.html',
