@@ -772,10 +772,12 @@ let camStream=null, _camCb=null, _autoOk=null, _currentUser=null, _currentUserTa
 let _isSuperAdmin = false;
 const SUPER_ADMIN_PASS = 'admin123';
 
-function save(){ try{ localStorage.setItem('pf_v3', JSON.stringify({funcs:S.funcs,pontos:S.pontos,users:S.users,tabs:S.tabs})); }catch(e){} syncToSupabase(); }
+function _cacheKey(){ return 'pf_v3_'+(S.empresa?.id||'__none'); }
+function save(){ try{ localStorage.setItem(_cacheKey(), JSON.stringify({funcs:S.funcs,pontos:S.pontos,users:S.users,tabs:S.tabs})); }catch(e){} syncToSupabase(); }
+function clearLocalData(){ S.funcs={}; S.pontos={}; S.users={}; S.tabs=[]; try{ localStorage.removeItem(_cacheKey()); }catch(e){} }
 function load(){
   try{
-    const d=JSON.parse(localStorage.getItem('pf_v3')||'{}');
+    const d=JSON.parse(localStorage.getItem(_cacheKey())||'{}');
     if(d.funcs)  S.funcs  = d.funcs;
     if(d.pontos) S.pontos = d.pontos;
     if(d.users)  S.users  = d.users;
@@ -844,6 +846,8 @@ async function doAdminLogin(){
     if(emp.status==='suspenso'){ loginErr('Acesso suspenso. Entre em contato: (21) 99867-9145'); return; }
     if(emp.nome_admin!==user||emp.senha_admin!==pass){ loginErr('Nome ou senha incorretos para esta empresa.'); return; }
     $('admin-pass').value=''; $('admin-user').value='';
+    // Limpar dados de qualquer empresa anterior antes de carregar a nova
+    S.funcs={}; S.pontos={}; S.users={}; S.tabs=[];
     _isSuperAdmin=false; S.empresa={id:emp.id,nome:emp.nome};
     sessionStorage.setItem('pf_adm','1'); sessionStorage.removeItem('pf_super');
     sessionStorage.setItem('pf_empresa',JSON.stringify(S.empresa));
@@ -851,7 +855,14 @@ async function doAdminLogin(){
     showScreen('admin'); adminNav('dashboard'); syncFromSupabase();
   }catch(e){ loginErr('Erro de conexão.'); }
 }
-function adminLogout(){ sessionStorage.removeItem('pf_adm'); showScreen('home'); }
+function adminLogout(){
+  clearLocalData();
+  sessionStorage.removeItem('pf_adm');
+  sessionStorage.removeItem('pf_super');
+  sessionStorage.removeItem('pf_empresa');
+  _isSuperAdmin=false; S.empresa=null;
+  showScreen('home');
+}
 
 function getSuperPass(){ return localStorage.getItem('pf_super_pass')||SUPER_ADMIN_PASS; }
 function showSuperAdminNav(visible){
@@ -1518,7 +1529,7 @@ setInterval(()=>{
 },30000);
 
 window.addEventListener('storage',e=>{
-  if(e.key!=='pf_v3') return; load();
+  if(e.key!==_cacheKey()) return; load();
   if(!isAdmin()) return;
   const av=document.querySelector('.view.active'); if(!av) return;
   if(av.id==='view-dashboard') renderDash();
