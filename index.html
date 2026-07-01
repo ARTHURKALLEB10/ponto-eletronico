@@ -841,7 +841,7 @@ async function doAdminLogin(){
     const rows=await fetch(url+'/rest/v1/pf_empresas?id=eq.'+encodeURIComponent(empSel)+'&select=*',{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(r=>r.json());
     if(!Array.isArray(rows)||!rows.length){ loginErr('Empresa não encontrada.'); return; }
     const emp=rows[0];
-    if(emp.status==='pendente'){ loginErr('Acesso pendente de aprovação. Contato: (21) 99867-9145'); return; }
+    if(emp.status==='suspenso'){ loginErr('Acesso suspenso. Entre em contato: (21) 99867-9145'); return; }
     if(emp.nome_admin!==user||emp.senha_admin!==pass){ loginErr('Nome ou senha incorretos para esta empresa.'); return; }
     $('admin-pass').value=''; $('admin-user').value='';
     _isSuperAdmin=false; S.empresa={id:emp.id,nome:emp.nome};
