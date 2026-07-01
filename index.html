@@ -845,21 +845,24 @@ async function doAdminLogin(){
     if(emp.status==='suspenso'){ loginErr('Acesso suspenso. Entre em contato: (21) 99867-9145'); return; }
     if(emp.nome_admin!==user||emp.senha_admin!==pass){ loginErr('Nome ou senha incorretos para esta empresa.'); return; }
     $('admin-pass').value=''; $('admin-user').value='';
-    // Limpar dados de qualquer empresa anterior antes de carregar a nova
-    S.funcs={}; S.pontos={}; S.users={}; S.tabs=[];
     _isSuperAdmin=false; S.empresa={id:emp.id,nome:emp.nome};
     sessionStorage.setItem('pf_adm','1'); sessionStorage.removeItem('pf_super');
     sessionStorage.setItem('pf_empresa',JSON.stringify(S.empresa));
+    // Limpa memória e carrega cache desta empresa do localStorage
+    S.funcs={}; S.pontos={}; S.users={}; S.tabs=[];
+    load(); // carrega cache local da empresa (acesso instantâneo)
     showSuperAdminNav(false);
-    showScreen('admin'); adminNav('dashboard'); syncFromSupabase();
+    showScreen('admin'); adminNav('dashboard');
+    syncFromSupabase(); // sincroniza com Supabase em segundo plano
   }catch(e){ loginErr('Erro de conexão.'); }
 }
 function adminLogout(){
-  clearLocalData();
+  // Mantém o cache local de cada empresa (pf_v3_ID) — apenas limpa a sessão ativa
   sessionStorage.removeItem('pf_adm');
   sessionStorage.removeItem('pf_super');
   sessionStorage.removeItem('pf_empresa');
   _isSuperAdmin=false; S.empresa=null;
+  S.funcs={}; S.pontos={}; S.users={}; S.tabs=[];
   showScreen('home');
 }
 
